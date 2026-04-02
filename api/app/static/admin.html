@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temp Mail Admin</title>
+  <link rel="stylesheet" href="/static/admin.css?v=__ASSET_VERSION__">
+</head>
+<body>
+  <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+  <section id="loginView" class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-badge">Temp Mail Admin</div>
+      <h1>管理员登录</h1>
+      <p>登录后可查看邮箱、邮件、监控日志，并调整运行时配置</p>
+      <label>
+        <span>用户名</span>
+        <input id="loginUsername" autocomplete="username" value="admin">
+      </label>
+      <label>
+        <span>密码</span>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="输入管理员密码">
+      </label>
+      <div class="auth-actions">
+        <button id="loginButton" class="primary">登录</button>
+        <span id="loginError" class="error-text"></span>
+      </div>
+    </div>
+  </section>
+
+  <main id="appView" class="app-shell hidden">
+    <header class="hero-card">
+      <div>
+        <div class="eyebrow">管理控制台</div>
+        <h1>Temp Mail Admin</h1>
+        <p id="brandMeta">正在加载服务概览…</p>
+      </div>
+      <div class="hero-actions">
+        <button id="refreshAllButton" class="secondary">刷新全部</button>
+        <button id="copySelectedAddressButton" class="ghost" disabled>复制地址</button>
+        <button id="logoutButton" class="ghost">退出</button>
+      </div>
+    </header>
+
+    <nav class="top-nav" aria-label="功能导航">
+      <button type="button" class="nav-tab is-active" data-view="overviewView">概览</button>
+      <button type="button" class="nav-tab" data-view="mailboxesView">邮箱</button>
+      <button type="button" class="nav-tab" data-view="domainsView">域名</button>
+      <button type="button" class="nav-tab" data-view="messagesView">消息</button>
+      <button type="button" class="nav-tab" data-view="policiesView">策略</button>
+      <button type="button" class="nav-tab" data-view="monitorView">监控日志</button>
+      <button type="button" class="nav-tab" data-view="settingsView">配置</button>
+    </nav>
+
+    <div id="appStatus" class="status-banner hidden" role="status" aria-live="polite"></div>
+
+    <section id="overviewView" class="view-panel active-view">
+      <section class="grid stats-section">
+        <div class="panel panel-lg">
+          <div class="panel-head">
+            <div>
+              <h2>系统概览</h2>
+              <p id="overviewTime" class="subtle"></p>
+            </div>
+          </div>
+          <div id="statsGrid" class="stats-grid"></div>
+        </div>
+        <div class="panel panel-lg">
+          <div class="panel-head">
+            <div>
+              <h2>最近创建邮箱</h2>
+              <p id="recentMailboxMeta" class="subtle">最近创建的邮箱将显示在这里</p>
+            </div>
+          </div>
+          <div id="recentMailboxRail" class="mailbox-rail"></div>
+        </div>
+      </section>
+    </section>
+
+    <section id="mailboxesView" class="view-panel hidden">
+      <section class="grid main-grid">
+        <div class="stack-col">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>邮箱管理</h2>
+                <p class="subtle">筛选、创建并查看邮箱详情</p>
+                <p id="mailboxResultMeta" class="subtle">等待加载邮箱列表…</p>
+              </div>
+              <div class="toolbar wrap">
+                <input id="mailboxSearch" placeholder="搜索邮箱地址">
+                <select id="mailboxStatus">
+                  <option value="all">全部状态</option>
+                  <option value="active">使用中</option>
+                  <option value="disabled">已禁用</option>
+                  <option value="expired">已过期</option>
+                </select>
+                <button id="mailboxSearchButton" class="secondary">查询</button>
+              </div>
+            </div>
+            <div class="form-grid compact-form">
+              <label>
+                <span>自定义邮箱地址</span>
+                <input id="mailboxCreateAddress" placeholder="例如 demo@abc.example.com；留空则随机生成">
+              </label>
+              <label>
+                <span>TTL（分钟）</span>
+                <input id="mailboxCreateTtl" type="number" min="1" placeholder="留空则使用默认 TTL">
+              </label>
+            </div>
+            <div class="toolbar split-toolbar">
+              <button id="createMailboxButton" class="primary" type="button">创建邮箱</button>
+              <span id="mailboxCreateMeta" class="subtle">正在加载允许域名与 TTL 范围…</span>
+            </div>
+            <div id="mailboxCreateResult" class="kv-grid hidden"></div>
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>地址</th>
+                    <th>状态</th>
+                    <th>消息数</th>
+                    <th>创建时间</th>
+                    <th>过期时间</th>
+                  </tr>
+                </thead>
+                <tbody id="mailboxTable"></tbody>
+              </table>
+            </div>
+            <div class="toolbar split-toolbar paging-bar">
+              <span id="mailboxPageMeta" class="subtle">第 1 / 1 页</span>
+              <div class="toolbar">
+                <button id="mailboxPrevPageButton" class="secondary" type="button">上一页</button>
+                <button id="mailboxNextPageButton" class="secondary" type="button">下一页</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="stack-col">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>邮箱详情</h2>
+                <p class="subtle">点击左侧邮箱查看详细信息与收件记录</p>
+              </div>
+              <div class="toolbar">
+                <button id="disableMailboxButton" class="danger" disabled>禁用邮箱</button>
+              </div>
+            </div>
+            <div id="mailboxDetail" class="kv-grid empty-box">点击左侧邮箱查看详情</div>
+            <div class="panel-subhead">
+              <h3>邮箱消息</h3>
+            </div>
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>主题</th>
+                    <th>发件人</th>
+                    <th>时间</th>
+                    <th>大小</th>
+                  </tr>
+                </thead>
+                <tbody id="mailboxMessages"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+
+    <section id="domainsView" class="view-panel hidden">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>基础域名</h2>
+            <p class="subtle">管理员添加基础域名后，系统会自动校验根域 MX 与通配子域 MX，并按结果自动启停。</p>
+            <p id="domainResultMeta" class="subtle">等待加载域名列表…</p>
+          </div>
+          <div class="toolbar wrap">
+            <select id="domainStatusFilter">
+              <option value="all">全部状态</option>
+              <option value="pending">待验证</option>
+              <option value="active">已启用</option>
+              <option value="disabled">已停用</option>
+            </select>
+            <button id="domainRefreshButton" class="secondary" type="button">刷新域名</button>
+          </div>
+        </div>
+
+        <div class="form-grid compact-form">
+          <label>
+            <span>基础域名</span>
+            <input id="domainCreateInput" placeholder="例如 example.com">
+          </label>
+          <label class="wide">
+            <span>备注</span>
+            <input id="domainNoteInput" placeholder="可选，记录用途或来源">
+          </label>
+        </div>
+        <div class="toolbar split-toolbar">
+          <button id="createDomainButton" class="primary" type="button">添加域名</button>
+          <span id="domainCreateMeta" class="subtle">系统会自动检查根域 MX 与通配子域 MX 是否都指向当前 SMTP 主机。</span>
+        </div>
+
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>域名</th>
+                <th>状态</th>
+                <th>期望 MX</th>
+                <th>最近检查</th>
+                <th>失败次数</th>
+                <th>错误</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="domainTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="messagesView" class="view-panel hidden">
+      <section class="grid single-focus-grid">
+        <div class="stack-col">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>最近消息</h2>
+                <p class="subtle">快速打开最新邮件详情，支持按邮箱、主题、发件人搜索</p>
+                <p id="messageResultMeta" class="subtle">等待加载消息列表…</p>
+                <div class="toolbar wrap">
+                  <input id="recentMessageSearch" placeholder="按邮箱、主题或发件人搜索">
+                  <button id="messageSearchButton" class="secondary" type="button">查询</button>
+                </div>
+              </div>
+            </div>
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>邮箱</th>
+                    <th>主题</th>
+                    <th>发件人</th>
+                    <th>时间</th>
+                  </tr>
+                </thead>
+                <tbody id="recentMessages"></tbody>
+              </table>
+            </div>
+            <div class="toolbar split-toolbar paging-bar">
+              <span id="messagePageMeta" class="subtle">第 1 / 1 页</span>
+              <div class="toolbar">
+                <button id="messagePrevPageButton" class="secondary" type="button">上一页</button>
+                <button id="messageNextPageButton" class="secondary" type="button">下一页</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="stack-col">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>消息详情</h2>
+                <p class="subtle">支持正文、HTML 预览、原始邮件和附件</p>
+                <div id="messageMetaActions" class="toolbar wrap"></div>
+              </div>
+            </div>
+            <div id="messageDetailBox" class="message-box empty-box">点击消息查看详细内容</div>
+          </section>
+        </div>
+      </section>
+    </section>
+
+    <section id="policiesView" class="view-panel hidden">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>域名策略</h2>
+            <p class="subtle">限制收件基础域或发件域的投递行为</p>
+          </div>
+          <div class="toolbar wrap">
+            <select id="policyStatusFilter">
+              <option value="all">全部状态</option>
+              <option value="active">启用</option>
+              <option value="disabled">停用</option>
+            </select>
+            <select id="policyScopeFilter">
+              <option value="">全部范围</option>
+              <option value="recipient_base_domain">收件基础域</option>
+              <option value="sender_domain">发件域</option>
+            </select>
+            <input id="policySearchInput" placeholder="按规则文本过滤当前页">
+            <button id="policyRefreshButton" class="secondary">刷新策略</button>
+          </div>
+        </div>
+        <div class="table-shell compact-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>范围</th>
+                <th>规则</th>
+                <th>动作</th>
+                <th>Status</th>
+                <th>优先级</th>
+                <th>命中次数</th>
+                <th>最近命中</th>
+              </tr>
+            </thead>
+            <tbody id="policyTable"></tbody>
+          </table>
+        </div>
+        <div class="toolbar split-toolbar paging-bar">
+          <span id="policyPageMeta" class="subtle">第 1 / 1 页</span>
+          <div class="toolbar">
+            <button id="policyPrevPageButton" class="secondary" type="button">上一页</button>
+            <button id="policyNextPageButton" class="secondary" type="button">下一页</button>
+          </div>
+        </div>
+        <div class="policy-editor">
+          <div class="panel-subhead">
+            <h3>策略编辑器</h3>
+            <p id="policyEditorMeta" class="subtle">新建一条策略，或点击表格中的策略继续编辑</p>
+          </div>
+          <div class="form-grid compact-form">
+            <label>
+              <span>范围</span>
+              <select id="policyScopeInput">
+                <option value="recipient_base_domain">收件基础域</option>
+                <option value="sender_domain">发件域</option>
+              </select>
+            </label>
+            <label>
+              <span>规则</span>
+              <input id="policyPatternInput" placeholder="例如 example.com 或 *.example.com">
+            </label>
+            <label>
+              <span>动作</span>
+              <select id="policyActionInput">
+                <option value="allow">允许投递</option>
+                <option value="reject">拒绝接收</option>
+                <option value="discard">静默丢弃</option>
+              </select>
+            </label>
+            <label>
+              <span>状态</span>
+              <select id="policyStatusInput">
+                <option value="active">启用</option>
+                <option value="disabled">停用</option>
+              </select>
+            </label>
+            <label>
+              <span>优先级</span>
+              <input id="policyPriorityInput" type="number" min="0" max="100000" value="100">
+            </label>
+            <label class="wide">
+              <span>备注</span>
+              <textarea id="policyNoteInput" rows="4" placeholder="给运维人员的备注，可选"></textarea>
+            </label>
+          </div>
+          <div class="toolbar">
+            <button id="policySaveButton" class="primary">保存策略</button>
+            <button id="policyResetButton" class="secondary">重置</button>
+            <button id="policyDeleteButton" class="danger" disabled>删除</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="monitorView" class="view-panel hidden">
+      <section class="grid lower-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>实时监控</h2>
+              <p class="subtle">查看系统事件流、收信、登录和清理动作</p>
+            </div>
+            <div class="toolbar">
+              <span id="monitorStatus" class="subtle">未连接</span>
+              <button id="monitorReconnectButton" class="secondary">重新连接</button>
+            </div>
+          </div>
+          <div id="monitorList" class="log-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>访问事件</h2>
+          </div>
+          <div id="eventsList" class="log-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>管理员审计</h2>
+          </div>
+          <div id="auditList" class="log-list"></div>
+        </section>
+      </section>
+    </section>
+
+    <section id="settingsView" class="view-panel hidden">
+      <section class="grid settings-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>运行时配置</h2>
+              <p class="subtle">这里修改的是运行时配置，会立即影响 API 与清理任务</p>
+              <p class="subtle">未传 <code>domain</code>/<code>address</code> 创建邮箱时，系统会在当前 active 基础域名里随机选择一个域名，并按长度范围随机生成前缀与子域。</p>
+            </div>
+            <button id="saveConfigButton" class="primary">保存配置</button>
+          </div>
+          <div id="configForm" class="form-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>部署配置（只读）</h2>
+              <p class="subtle">用于核对当前服务域名、版本与部署参数</p>
+            </div>
+          </div>
+          <pre id="deploymentConfig"></pre>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script src="/static/admin.js?v=__ASSET_VERSION__" defer></script>
+</body>
+</html>

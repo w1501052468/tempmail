@@ -1,0 +1,5 @@
+hosts = ${POSTGRES_HOST}:${POSTGRES_PORT}
+user = ${POSTGRES_USER}
+password = ${POSTGRES_PASSWORD}
+dbname = ${POSTGRES_DB}
+query = SELECT m.address FROM mailboxes m WHERE lower(m.address) = lower('%s') AND m.status = 'active' AND m.expires_at > NOW() AND EXISTS (SELECT 1 FROM managed_domains d WHERE d.status = 'active' AND lower(d.domain) = lower(m.base_domain)) LIMIT 1

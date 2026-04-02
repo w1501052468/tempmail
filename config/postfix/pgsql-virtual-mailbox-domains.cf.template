@@ -1,0 +1,5 @@
+hosts = ${POSTGRES_HOST}:${POSTGRES_PORT}
+user = ${POSTGRES_USER}
+password = ${POSTGRES_PASSWORD}
+dbname = ${POSTGRES_DB}
+query = SELECT q.lookup_value FROM managed_domains, (SELECT lower('%s') AS lookup_value) AS q WHERE status = 'active' AND (q.lookup_value = lower(domain) OR right(q.lookup_value, char_length(lower(domain)) + 1) = ('.' || lower(domain))) LIMIT 1
