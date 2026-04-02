@@ -1,0 +1,15 @@
+.env
+certs/
+data/
+pgdata/
+runtime/acme/
+runtime/acme-web/
+runtime/certs/
+runtime/data/
+runtime/signals/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/

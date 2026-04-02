@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.*
+README.md
+runtime/
+sql/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.zip
+*.png
+*.jpg
+*.jpeg
